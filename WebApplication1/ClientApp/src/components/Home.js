@@ -13,7 +13,9 @@ export class Home extends Component {
             patronymic: "",
             surname: "",
             comment: "",
-            id: ""
+            id: "",
+            isEdit: false,
+            editId: ""
         };
         this.NameChange = this.NameChange.bind(this);
         this.SurnameChange = this.SurnameChange.bind(this);
@@ -23,8 +25,16 @@ export class Home extends Component {
         this.PeopleCreate = this.PeopleCreate.bind(this);
         this.PeopleUpdate = this.PeopleUpdate.bind(this);
         this.PeopleDelete = this.PeopleDelete.bind(this);
+        this.DeleteProb = this.DeleteProb.bind(this);
+        this.UpdateProb = this.UpdateProb.bind(this);
+        this.UpdateStop = this.UpdateStop.bind(this);
     }
 
+    ClearInput(){
+    this.setState({ surname: "" });
+    this.setState({ name: "" });
+    this.setState({ patronymic: "" });
+    this.setState({ comment: "" }); }
 
     NameChange(event) {
         this.setState({ name: event.target.value });
@@ -40,6 +50,29 @@ export class Home extends Component {
     }
     IdChange(event) {
         this.setState({ id: event.target.value });
+    }
+
+    DeleteProb(event) {
+        fetch("People/PeopleDelete?Id=" + event.target.value)
+            .then((response) => response.json())
+            .then((response) => {
+                this.setState({ table: response });
+                this.setState({ loading: false });
+            })
+    }
+
+    UpdateProb(idpeople,surname,name,patronymic,comment) {
+        this.setState({ isEdit: true });
+        this.setState({ editId: idpeople });
+        this.setState({ surname: surname });
+        this.setState({ name: name });
+        this.setState({ patronymic: patronymic });
+        this.setState({ comment: comment });
+    }
+
+    UpdateStop() {
+        this.ClearInput();
+        this.setState({ isEdit: false });
     }
 
     componentDidMount() {
@@ -59,14 +92,18 @@ export class Home extends Component {
             .then((response) => {
                 this.setState({ table: response });
                 this.setState({ loading: false });
+                this.ClearInput();
+                this.setState({ isEdit: false });
             })
     }
-    PeopleUpdate() {
-        fetch("People/PeopleUpdate?Name=" + this.state.name + "&Patronymic=" + this.state.patronymic + "&Surname=" + this.state.surname + "&Comment=" + this.state.comment + "&Id=" + this.state.id)
+    PeopleUpdate(event) {
+        fetch("People/PeopleUpdate?Name=" + this.state.name + "&Patronymic=" + this.state.patronymic + "&Surname=" + this.state.surname + "&Comment=" + this.state.comment + "&Id=" + event.target.value)
             .then((response) => response.json())
             .then((response) => {
                 this.setState({ table: response });
                 this.setState({ loading: false });
+                this.setState({ isEdit: false });
+                this.ClearInput();
             })
     }
     PeopleDelete() {
@@ -78,33 +115,41 @@ export class Home extends Component {
             })
     }
 
-    static renderPeoplesTable(state, NameChange, SurnameChange, PatronymicChange, CommentChange, IdChange) {
+    static renderPeoplesTable(state, NameChange, SurnameChange, PatronymicChange, CommentChange, IdChange, DeleteProb, UpdateProb, UpdateStop, PeopleUpdate, PeopleCreate) {
         return (
             <table className='table table-striped text-light' aria-labelledby="tabelLabel">
                 <thead>
                     <tr>
-                        <th>Id</th>
                         <th>Фамилия</th>
                         <th>Имя</th>
                         <th>Отчество</th>
                         <th>Коммент</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><input type="text" className="form-control bg-secondary text-light" value={state.id} onChange={IdChange} /></td>
                         <td><input type="text" className="form-control bg-secondary text-light" value={state.surname} onChange={SurnameChange} /></td>
                         <td><input type="text" className="form-control bg-secondary text-light" value={state.name} onChange={NameChange} /></td>
                         <td><input type="text" className="form-control bg-secondary text-light" value={state.patronymic} onChange={PatronymicChange} /></td>
                         <td><input type="text" className="form-control bg-secondary text-light" value={state.comment} onChange={CommentChange} /></td>
+                        <td><button className="btn btn-primary" onClick={PeopleCreate}>&#10010;</button></td>
                     </tr>
                     {state.table.map(tab =>
                         <tr key={tab.idPeoples}>
-                            <td>{tab.idPeoples}</td>
-                            <td>{tab.surname}</td>
-                            <td>{tab.name}</td>
-                            <td>{tab.patronymic}</td>
-                            <td>{tab.comment}</td>
+                            <td>{state.isEdit && state.editId == tab.idPeoples ? <input type="text" className="form-control bg-secondary text-light" value={state.surname} onChange={SurnameChange} /> : <span>{tab.surname}</span>}</td>
+                            <td>{state.isEdit && state.editId == tab.idPeoples ? <input type="text" className="form-control bg-secondary text-light" value={state.name} onChange={NameChange} /> : <span>{tab.name}</span>}</td>
+                            <td>{state.isEdit && state.editId == tab.idPeoples ? <input type="text" className="form-control bg-secondary text-light" value={state.patronymic} onChange={PatronymicChange} /> : <span>{tab.patronymic}</span>}</td>
+                            <td>{state.isEdit && state.editId == tab.idPeoples ? <input type="text" className="form-control bg-secondary text-light" value={state.comment} onChange={CommentChange} /> : <span>{tab.comment}</span>}</td>
+                            <td>
+                                <div>
+                                    {state.isEdit && state.editId == tab.idPeoples ?
+                                        <div className="btn-group"><button className="btn btn-success" value={tab.idPeoples} onClick={PeopleUpdate}>&#10148;</button>
+                                            <button className="btn btn-warning" onClick={UpdateStop}>&#10008;</button></div>
+                                        : <div className="btn-group"><button className="btn btn-info" onClick={UpdateProb.bind(this, tab.idPeoples, tab.surname, tab.name, tab.patronymic, tab.comment)}>&#10001;</button>
+                                            <button value={tab.idPeoples} className="btn btn-danger" onClick={DeleteProb}>&#10008;</button></div>}
+                                </div>
+                            </td>
                         </tr>
                     )}
                 </tbody>
@@ -115,22 +160,16 @@ export class Home extends Component {
     render() {
         let WriteTable = this.state.loading
             ? <p><em>Loading...</em></p>
-            : Home.renderPeoplesTable(this.state, this.NameChange, this.SurnameChange, this.PatronymicChange, this.CommentChange, this.IdChange);
+            : Home.renderPeoplesTable(this.state, this.NameChange, this.SurnameChange, this.PatronymicChange, this.CommentChange, this.IdChange, this.DeleteProb, this.UpdateProb, this.UpdateStop, this.PeopleUpdate, this.PeopleCreate);
 
         return (
 
 
             <div >
-                <div>
-                    <div className="btn-group " >
-                        <button className="btn btn-primary" onClick={this.PeopleCreate}>Create</button>
-                        <button className="btn btn-success" onClick={this.PeopleUpdate}>Update</button>
-                        <button className="btn btn-danger" onClick={this.PeopleDelete}>Delete</button>
-                    </div>
-                </div>
                 <h1 id="tabelLabel" >People table</h1>
                 {WriteTable}
             </div>
+
             //<div>
             //  <h1>Hello, world!</h1>
             //  <p>Welcome to your new single-page application, built with:</p>

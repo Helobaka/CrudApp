@@ -15,15 +15,7 @@ namespace WebApplication1.Controllers
         {
             using (PeopleContext db = new PeopleContext())
             {
-                //PeopleModel user1 = new PeopleModel { Name = "Tom", Patronymic  = "33",Surname="f" };
-                //PeopleModel user2 = new PeopleModel { Name = "Alice", Patronymic  ="a", Surname="j" };
-                //PeopleModel user3 = new PeopleModel { idPeoples=1 };
-                //db.Peoples.Remove(user3);
-                //db.Peoples.Add(user1);
-                //db.Peoples.Add(user2);
-                //db.SaveChanges();
                 var peoples = db.Peoples.ToList();
-
                 return peoples;
             }
 
